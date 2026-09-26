@@ -6,6 +6,9 @@
 #include <syslog.h>
 #include "lpac-download.h"
 
+// SGP.22 v2.2.2 section 2.5.5: block size for Bound Profile Package segments
+#define SGP22_BPP_BLOCK_SIZE 255
+
 jobject download_state_preparing;
 jobject download_state_connecting;
 jobject download_state_authenticating;
@@ -172,6 +175,7 @@ Java_net_typeblog_lpac_1jni_LpacJni_downloadProfile(JNIEnv *env, jobject thiz, j
     jobject remote_profile_info = NULL;
     jobject confirming_download_state = NULL;
     jboolean confirmed = JNI_TRUE;
+    uint8_t saved_es10x_mss;
     int ret;
 
     if (confirmation_code != NULL)
@@ -293,7 +297,22 @@ Java_net_typeblog_lpac_1jni_LpacJni_downloadProfile(JNIEnv *env, jobject thiz, j
         goto out;
     }
 
+    // SGP.22 v2.2.2 section 2.5.5: each segment of the Bound Profile Package that is up to
+    // 255 bytes SHALL be transported in one APDU, larger TLVs in blocks of 255 bytes.
+    // With a smaller ES10x MSS (the "Most Compatible" default is 63), the
+    // BF36 header + InitialiseSecureChannelRequest segment (~180 bytes) gets split over
+    // several STORE DATA commands, which strict eUICCs reject with SW 6A80 on the very
+    // first block (seen on an NXP eUICC, EID prefix 89043051, behind a Samsung RIL).
+    // Use the spec block size for LoadBoundProfilePackage only; every other ES10x
+    // command keeps the configured MSS. No-op when the MSS is already 255.
+    saved_es10x_mss = ctx->es10x_mss;
+    if (ctx->es10x_mss < SGP22_BPP_BLOCK_SIZE) {
+        syslog(LOG_INFO, "es10b_load_bound_profile_package: MSS %u -> %u (SGP.22 2.5.5)",
+               (unsigned) ctx->es10x_mss, (unsigned) SGP22_BPP_BLOCK_SIZE);
+        ctx->es10x_mss = SGP22_BPP_BLOCK_SIZE;
+    }
     ret = es10b_load_bound_profile_package(ctx, &es10b_load_bound_profile_package_result);
+    ctx->es10x_mss = saved_es10x_mss;
     syslog(LOG_INFO, "es10b_load_bound_profile_package %d, reason %d", ret, es10b_load_bound_profile_package_result.errorReason);
     if (ret < 0) {
         ret = - (int) es10b_load_bound_profile_package_result.errorReason;
