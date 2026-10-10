@@ -1,3 +1,22 @@
+这个二改项目是个半成品，原先打算给**ZTE U30 air全球版**这种无头安卓机使用，加入 provider 通过 shell 来进行写卡切配置等操作
+
+遗憾的是，**ZTE U30 air全球版**耐受太差，进行切配置操作会导致 **展锐 modem** 假死，认不出**内置卡**(或认出3个slot)，必须通过**reset**孔位重置，通过外置卡刷新内置卡。
+
+假死后，已做过的自救方案：
+0.切卡后不通知modem，手动重启：无效
+1.飞行模式飞一下：无效
+2.reboot -p加拔电，等待5分钟开机：无效
+3.cmd phone ：Permission denied（给root和selinux宽容都不行）
+4.setenforce 0 ：Permission denied
+5.rm telephony.db：无效
+6.at命令：无效
+
+二改openeuicc之前尝试过的方案：
+1.lpac二进制：无效，从源码看只有 gbinder_hidl.c，不支持aidl
+2.at命令：无效，全是机子自带的广播
+
+不排除是我菜，能力有限。如果真的能有人折腾出写/切不死内置esim的方案，那我和一众有类似需求的用户将感激不尽
+
 <img src="https://gitea.angry.im/PeterCxy/OpenEUICC/media/branch/master/art/OpenEUICCBG.svg" width="512" height="300">
 
 A fully free and open-source Local Profile Assistant implementation for Android devices.
