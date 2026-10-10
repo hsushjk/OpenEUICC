@@ -288,7 +288,7 @@ class EsimBridgeProvider : ContentProvider() {
 
     private fun interpretSwitchResult(error: Throwable?, enable: Boolean): Bundle {
         if (error == null) return bundle("ok" to true)
-        if (error.javaClass.simpleName == "SwitchingProfilesRefreshException") {
+        if (error is EuiccChannelManagerService.SwitchingProfilesRefreshException) {
             return bundle(
                 "ok" to true,
                 "warning" to ("Profile " + (if (enable) "enabled" else "disabled") +
