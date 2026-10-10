@@ -64,6 +64,12 @@
                 android:name="autoStoreLocales"
                 android:value="true" />
         </service>
+
+        <provider
+            android:name=".EsimBridgeProvider"
+            android:authorities="im.hsushjk.esim.provider"
+            android:exported="true"
+            android:enabled="true" />
     </application>
 
 </manifest>
